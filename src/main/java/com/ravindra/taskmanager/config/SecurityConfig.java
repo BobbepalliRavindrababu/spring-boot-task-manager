@@ -2,27 +2,46 @@ package com.ravindra.taskmanager.config;
 
 import com.ravindra.taskmanager.entity.User;
 import com.ravindra.taskmanager.repository.UserRepository;
-import org.springframework.boot.CommandLineRunner;
+import com.ravindra.taskmanager.security.JwtAuthenticationEntryPoint;
+import com.ravindra.taskmanager.security.JwtAuthenticationFilter;
+import com.ravindra.taskmanager.service.CustomUserDetailsService;
+import com.ravindra.taskmanager.service.JwtService;
+import jakarta.servlet.Filter;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AuthenticationManager;
+
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,JwtAuthenticationFilter jwtAuthenticationFilter, JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) throws Exception{
 
-        http.authorizeHttpRequests
+        http.
+               csrf(csrf->csrf.disable())
+                .authorizeHttpRequests
                         (auth->auth
                     .requestMatchers("/swagger-ui/**").permitAll()
                     .requestMatchers("/v3/api-docs/**").permitAll()
+                                .requestMatchers("/auth/**").permitAll()
                     .anyRequest().authenticated()
                 );
-        http.httpBasic(Customizer.withDefaults());
+
+        http.exceptionHandling(exception->exception
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint));
+
+        http.addFilterBefore(
+                jwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class
+        );
+
         return http.build();
     }
 
@@ -32,23 +51,17 @@ public class SecurityConfig {
     }
 
     @Bean
-    CommandLineRunner createTestUser(UserRepository userRepository, PasswordEncoder passwordEncoder){
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuratrion) throws Exception{
+        return configuratrion.getAuthenticationManager();
+    }
 
-        return args->{
-            if(userRepository.findByEmail("ravi@gmail.com").isEmpty()){
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, CustomUserDetailsService customUserDetailsService){
+        return new JwtAuthenticationFilter(jwtService,customUserDetailsService);
+    }
 
-                User user=new User();
-
-                user.setEmail("rai@gmail.com");
-                user.setUsername("ravi");
-                user.setPassword(passwordEncoder.encode("ravi123"));
-                user.setRole("ROLE_USER");
-                user.setEnabled(true);
-
-                userRepository.save(user);
-
-                System.out.println("Test user is created successfully");
-            }
-        };
+    @Bean
+    public JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint(){
+        return new JwtAuthenticationEntryPoint();
     }
 }
