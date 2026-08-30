@@ -11,4 +11,9 @@ public class AdminController {
     public String helloAdmin(){
         return "Hello Admin, you are authorized";
     }
+
+    @GetMapping("/dashboard")
+    public String dashboard() {
+        return "Welcome Admin";
+    }
 }
