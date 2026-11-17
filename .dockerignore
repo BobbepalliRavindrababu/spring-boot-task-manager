@@ -1,0 +1,28 @@
+
+# Git files
+.git
+.gitignore
+
+# IDE files
+.idea
+*.iml
+.vscode
+
+# Maven build output
+target/
+
+# Maven Wrapper (not needed because Docker uses Maven image)
+.mvn/
+mvnw
+mvnw.cmd
+
+# Documentation
+README.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment and secrets
+.env
+.env.*
